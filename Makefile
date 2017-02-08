@@ -9,16 +9,25 @@ ISTANBUL = ./node_modules/.bin/istanbul
 MOCHA = ./node_modules/mocha/bin/_mocha
 COVERALLS = ./node_modules/coveralls/bin/coveralls.js
 DOXMATE = ./node_modules/.bin/doxmate
+BABEL = ./node_modules/.bin/babel
 PATH := ./node_modules/.bin:$(PATH)
+
+JS_SOURCES = $(wildcard lib/*.es)
+OBJ = $(patsubst %.es,%.js, $(JS_SOURCES))
+
+lib/%.js: lib/%.es
+	$(BABEL) $< -o $@
 
 lint:
 	@eslint --fix lib test
 
-doc:
-	@$(DOXMATE) build -o out
+build: ${OBJ} .babelrc
 
-test:
-	@NODE_ENV=test ./node_modules/.bin/mocha \
+doc:
+	@doxmate build -o out
+
+test: build
+	@NODE_ENV=test mocha \
 		--reporter $(REPORTER) \
 		--require co-mocha \
 		--timeout $(TIMEOUT) \
@@ -26,7 +35,7 @@ test:
 		$(TESTS)
 
 test-debug:
-	@NODE_ENV=test ./node_modules/.bin/mocha -d \
+	@NODE_ENV=test mocha -d \
 		--reporter $(REPORTER) \
 		--require co-mocha \
 		--timeout $(TIMEOUT) \
@@ -34,8 +43,7 @@ test-debug:
 		$(TESTS)
 
 test-cov:
-	@NODE_ENV=test node \
-		node_modules/.bin/istanbul cover --report html \
+	@NODE_ENV=test istanbul cover --report html \
 		./node_modules/.bin/_mocha -- \
 		--reporter $(REPORTER) \
 		--require co-mocha \
@@ -44,7 +52,7 @@ test-cov:
 		$(TESTS)
 
 test-coveralls:
-	@$(ISTANBUL) cover --report lcovonly $(MOCHA) -- -t $(TIMEOUT) -R spec $(TESTS)
+	@istanbul cover --report lcovonly $(MOCHA) -- -t $(TIMEOUT) -R spec $(TESTS)
 	@echo TRAVIS_JOB_ID $(TRAVIS_JOB_ID)
 	@cat ./coverage/lcov.info | $(COVERALLS) && rm -rf ./coverage
 

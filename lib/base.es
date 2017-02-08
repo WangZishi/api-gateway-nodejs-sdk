@@ -10,7 +10,7 @@ class Base {
   constructor() {
   }
 
-  asyc get(url, opts) {
+  async get(url, opts) {
     opts || (opts = {});
     var parsed = parse(url, true);
     if (opts && opts.data) {
